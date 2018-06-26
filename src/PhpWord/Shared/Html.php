@@ -66,6 +66,10 @@ class Html
         $html = str_replace('&', '&amp;', $html);
         $html = str_replace(array('_lt_', '_gt_', '_amp_'), array('&lt;', '&gt;', '&amp;'), $html);
 
+        $search = array('<header', '</header>', '<nav', '</nav>', '<section', '</section>', '<br></p>', '<figure', '</figure>', '<figcaption', '</figcaption>');
+        $replace = array('<div', '</div>','<div', '</div>', '<div', '</div>', '</p>', '<div', '</div>', '<div', '</div>');
+        $html = str_replace($search, $replace, $html);
+        
         if (false === $fullHTML) {
             $html = '<body>' . $html . '</body>';
         }
@@ -632,7 +636,7 @@ class Html
                     foreach ($styleattr as $attr) {
                         if (strpos($attr, ':')) {
                             list($k, $v) = explode(':', $attr);
-                            switch ($k) {
+                            switch (trim($k)) {
                                 case 'float':
                                     if (trim($v) == 'right') {
                                         $style['hPos'] = \PhpOffice\PhpWord\Style\Image::POS_RIGHT;
@@ -649,6 +653,31 @@ class Html
                                         $style['overlap'] = true;
                                     }
                                     break;
+                                case 'width':
+                                case 'max-width':
+                                    $match = array();
+                                    preg_match('/(^\d+)([a-z]+)$/', trim($v), $match);
+                                    $style['width'] = $match[1];
+                                    if(count($match) == 2) {
+                                        $style['unit'] = \PhpOffice\PhpWord\Style\Image::UNIT_PX;
+                                    } else {
+                                        $style['unit'] = $match[2];
+                                    }
+                                    break;
+                                case 'height':
+                                case 'max-height':
+                                    if(isset($style['width'])) {
+                                        break;
+                                    }
+                                    $match = array();
+                                    preg_match('/(^\d+)([a-z]+)$/', trim($v), $match);
+                                    $style['height'] = $match[1];
+                                    if(count($match) == 2) {
+                                        $style['unit'] = \PhpOffice\PhpWord\Style\Image::UNIT_PX;
+                                    } else {
+                                        $style['unit'] = $match[2];
+                                    }
+                                    break;
                             }
                         }
                     }
@@ -658,11 +687,7 @@ class Html
         $originSrc = $src;
         if (strpos($src, 'data:image') !== false) {
             $tmpDir = Settings::getTempDir() . '/';
-
-            $match = array();
-            preg_match('/data:image\/(\w+);base64,(.+)/', $src, $match);
-
-            $src = $imgFile = $tmpDir . uniqid() . '.' . $match[1];
+            $src = $imgFile = $tmpDir . uniqid();
 
             $ifp = fopen($imgFile, 'wb');
 
@@ -683,9 +708,7 @@ class Html
         if (!is_file($src)) {
             if ($imgBlob = @file_get_contents($src)) {
                 $tmpDir = Settings::getTempDir() . '/';
-                $match = array();
-                preg_match('/.+\.(\w+)$/', $src, $match);
-                $src = $tmpDir . uniqid() . '.' . $match[1];
+                $src = $tmpDir . uniqid();
 
                 $ifp = fopen($src, 'wb');
 
