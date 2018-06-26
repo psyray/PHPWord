@@ -73,7 +73,7 @@ class Html
         // Load DOM
         $dom = new \DOMDocument();
         $dom->preserveWhiteSpace = $preserveWhiteSpace;
-        $dom->loadXML($html);
+        $dom->loadHTML($html, LIBXML_NOWARNING);
         self::$xpath = new \DOMXpath($dom);
         $node = $dom->getElementsByTagName('body');
 
